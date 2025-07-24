@@ -1,5 +1,6 @@
-import { BarChart3, Building2, ChevronDown, ChevronRight, ChevronUp, Download, Home, Map, Menu, Plus, TrendingUp, Upload, X } from 'lucide-react';
+import { BarChart3, Building2, Calculator, ChevronDown, ChevronRight, ChevronUp, Download, Home, Map, Menu, Plus, TrendingUp, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import AmortizacoesForm from './components/AmortizacoesForm';
 import { BankDataDisplay } from './components/BankDataDisplay';
 import { BankForm } from './components/BankForm';
 import { DebtMapChart } from './components/DebtMapChart';
@@ -14,7 +15,7 @@ function App() {
     const [selectedBank, setSelectedBank] = useState<string>('');
     const [showForm, setShowForm] = useState(false);
     const [editingBank, setEditingBank] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'dados' | 'propostas' | 'graficos' | 'debt-map'>('dados');
+    const [activeTab, setActiveTab] = useState<'dados' | 'propostas' | 'amortizacoes' | 'graficos' | 'debt-map'>('dados');
     const [comparisonResults, setComparisonResults] = useState<{ [key: string]: { [key: number]: any } }>({});
     const [debtMapData, setDebtMapData] = useState<DebtMapEntry[]>([]);
     const [selectedBanksForChart, setSelectedBanksForChart] = useState<string[]>([]);
@@ -147,6 +148,7 @@ function App() {
     const tabs = [
         { id: 'dados', label: 'Dados', icon: Home },
         { id: 'propostas', label: 'Propostas', icon: TrendingUp },
+        { id: 'amortizacoes', label: 'Amortizações', icon: Calculator },
         { id: 'debt-map', label: 'Mapa', icon: Map },
         { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
     ];
@@ -404,6 +406,104 @@ function App() {
                         )}
                     </div>
 
+                    {/* Amortizações Tab */}
+                    <div className={`transition-all duration-300 ease-in-out ${activeTab === 'amortizacoes' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 absolute'
+                        }`}>
+                        {activeTab === 'amortizacoes' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Amortizações Antecipadas Globais</h2>
+                                    <p className="text-sm text-gray-600 mt-1">Configure amortizações que se aplicam a todos os bancos simultaneamente</p>
+                                </div>
+
+                                {Object.keys(banksData).length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+                                            <Calculator className="h-8 w-8 text-orange-600" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum banco adicionado</h3>
+                                        <p className="text-gray-600 mb-6">Adicione bancos primeiro para configurar amortizações antecipadas.</p>
+                                        <button
+                                            onClick={handleAddBank}
+                                            className="btn-primary"
+                                        >
+                                            Adicionar Primeiro Banco
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {/* Formulário Global de Amortizações */}
+                                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                                            <div className="p-6 border-b border-gray-200">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                                        <Calculator className="h-5 w-5 text-orange-600" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-semibold text-gray-900">Configuração Global de Amortizações</h3>
+                                                        <p className="text-sm text-gray-500">As amortizações configuradas aqui serão aplicadas a todos os bancos</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="p-6">
+                                                <AmortizacoesForm
+                                                    amortizacoes={banksData[Object.keys(banksData)[0]]?.amortizacoes || []}
+                                                    onAmortizacoesChange={(amortizacoes) => {
+                                                        const updatedBanksData = { ...banksData };
+                                                        Object.keys(updatedBanksData).forEach(bankName => {
+                                                            updatedBanksData[bankName] = {
+                                                                ...updatedBanksData[bankName],
+                                                                amortizacoes: [...amortizacoes]
+                                                            };
+                                                        });
+                                                        setBanksData(updatedBanksData);
+                                                    }}
+                                                    tempoEmprestimo={banksData[Object.keys(banksData)[0]]?.tempo_emprestimo || 40}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Resumo por Banco */}
+                                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                                            <div className="p-6 border-b border-gray-200">
+                                                <h3 className="font-semibold text-gray-900">Resumo por Banco</h3>
+                                                <p className="text-sm text-gray-500">Total de amortizações aplicadas a cada banco</p>
+                                            </div>
+                                            <div className="p-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {Object.keys(banksData).map((bankName) => {
+                                                        const bankData = banksData[bankName];
+                                                        const totalAmortizacoes = bankData.amortizacoes?.reduce((total, a) => total + a.valor, 0) || 0;
+
+                                                        return (
+                                                            <div key={bankName} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                                                <div className="flex items-center space-x-3 mb-2">
+                                                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                                        <Building2 className="h-4 w-4 text-blue-600" />
+                                                                    </div>
+                                                                    <h4 className="font-medium text-gray-900">{bankName}</h4>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="text-sm text-gray-600">Total Amortizações</p>
+                                                                    <p className="font-bold text-lg text-orange-700">
+                                                                        {new Intl.NumberFormat('pt-PT', {
+                                                                            style: 'currency',
+                                                                            currency: 'EUR'
+                                                                        }).format(totalAmortizacoes)}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Mapa Tab */}
                     <div className={`transition-all duration-300 ease-in-out ${activeTab === 'debt-map' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 absolute'
                         }`}>
@@ -471,6 +571,7 @@ function App() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] overflow-hidden">
                         <BankForm
+                            key={`bank-form-${editingBank || 'new'}`}
                             bankName={editingBank || ''}
                             data={editingBank ? banksData[editingBank] : {
                                 periodo_fixa: 2,

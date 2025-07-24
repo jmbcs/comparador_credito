@@ -1,7 +1,6 @@
 import { AlertCircle, Building2, Calculator, CheckCircle, ChevronLeft, ChevronRight, CreditCard, Euro, Save, TrendingUp, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { BankData } from '../types';
-import AmortizacoesForm from './AmortizacoesForm';
 
 interface BankFormProps {
     bankName: string;
@@ -13,18 +12,12 @@ interface BankFormProps {
 
 export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCancel, isEditing }) => {
     const [formData, setFormData] = useState<BankData>(data);
-    const [newBankName, setNewBankName] = useState(bankName);
+    const [newBankName, setNewBankName] = useState(isEditing ? bankName : '');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeStep, setActiveStep] = useState(1);
 
-    useEffect(() => {
-        if (newBankName !== bankName) {
-            setFormData(data);
-            setNewBankName(bankName);
-            setErrors({});
-        }
-    }, [bankName, data, newBankName]);
+    // No useEffect needed - the component will be recreated with the key prop
 
     // Bloquear scroll do body quando o modal estiver aberto
     useEffect(() => {
@@ -105,6 +98,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         }
     };
 
+    const handleNumberInputChange = (field: keyof BankData, value: string) => {
+        const numValue = value === '' ? 0 : parseFloat(value) || 0;
+        handleInputChange(field, numValue);
+    };
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-PT', {
             style: 'currency',
@@ -155,8 +153,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         { id: 1, title: 'Informações Básicas', icon: Building2, color: 'blue' },
         { id: 2, title: 'Taxas e Custos', icon: Calculator, color: 'green' },
         { id: 3, title: 'Outflow Inicial', icon: CreditCard, color: 'purple' },
-        { id: 4, title: 'Amortizações', icon: TrendingUp, color: 'orange' },
-        { id: 5, title: 'Resumo', icon: CheckCircle, color: 'emerald' }
+        { id: 4, title: 'Resumo', icon: CheckCircle, color: 'emerald' }
     ];
 
     const renderStepContent = () => {
@@ -200,13 +197,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                         Valor do Empréstimo (€) *
                                     </label>
                                     <input
-                                        type="number"
-                                        value={formData.valor_emprestimo}
-                                        onChange={(e) => handleInputChange('valor_emprestimo', parseFloat(e.target.value) || 0)}
+                                        type="text"
+                                        value={formData.valor_emprestimo || ''}
+                                        onChange={(e) => handleNumberInputChange('valor_emprestimo', e.target.value)}
                                         className={`input ${errors.valor_emprestimo ? 'input-error' : ''}`}
                                         placeholder="Ex: 200000"
-                                        min="0"
-                                        step="1000"
                                     />
                                     {errors.valor_emprestimo && (
                                         <p className="form-error">
@@ -221,13 +216,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                         Prazo (anos) *
                                     </label>
                                     <input
-                                        type="number"
-                                        value={formData.tempo_emprestimo}
-                                        onChange={(e) => handleInputChange('tempo_emprestimo', parseInt(e.target.value) || 0)}
+                                        type="text"
+                                        value={formData.tempo_emprestimo || ''}
+                                        onChange={(e) => handleNumberInputChange('tempo_emprestimo', e.target.value)}
                                         className={`input ${errors.tempo_emprestimo ? 'input-error' : ''}`}
                                         placeholder="Ex: 30"
-                                        min="1"
-                                        max="50"
                                     />
                                     {errors.tempo_emprestimo && (
                                         <p className="form-error">
@@ -263,14 +256,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Taxa Fixa (%) *
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.taxa_fixa}
-                                                onChange={(e) => handleInputChange('taxa_fixa', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.taxa_fixa || ''}
+                                                onChange={(e) => handleNumberInputChange('taxa_fixa', e.target.value)}
                                                 className={`input ${errors.taxa_fixa ? 'input-error' : ''}`}
                                                 placeholder="Ex: 3.5"
-                                                min="0"
-                                                max="20"
-                                                step="0.001"
                                             />
                                             {errors.taxa_fixa && (
                                                 <p className="form-error">
@@ -285,13 +275,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Período Fixo (anos)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.periodo_fixa}
-                                                onChange={(e) => handleInputChange('periodo_fixa', parseInt(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.periodo_fixa || ''}
+                                                onChange={(e) => handleNumberInputChange('periodo_fixa', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 2"
-                                                min="0"
-                                                max="50"
                                             />
                                         </div>
 
@@ -300,14 +288,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Euribor (%)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.euribor}
-                                                onChange={(e) => handleInputChange('euribor', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.euribor || ''}
+                                                onChange={(e) => handleNumberInputChange('euribor', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 2.081"
-                                                min="0"
-                                                max="20"
-                                                step="0.001"
                                             />
                                         </div>
 
@@ -316,14 +301,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Spread (%)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.spread}
-                                                onChange={(e) => handleInputChange('spread', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.spread || ''}
+                                                onChange={(e) => handleNumberInputChange('spread', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 0.5"
-                                                min="0"
-                                                max="10"
-                                                step="0.001"
                                             />
                                         </div>
                                     </div>
@@ -339,13 +321,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Seguro de Vida (€/mês)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.seguro_vida}
-                                                onChange={(e) => handleInputChange('seguro_vida', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.seguro_vida || ''}
+                                                onChange={(e) => handleNumberInputChange('seguro_vida', e.target.value)}
                                                 className={`input ${errors.seguro_vida ? 'input-error' : ''}`}
                                                 placeholder="Ex: 5.00"
-                                                min="0"
-                                                step="0.01"
                                             />
                                             {errors.seguro_vida && (
                                                 <p className="form-error">
@@ -360,13 +340,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Seguro Multirriscos (€/mês)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.seguro_multiriscos}
-                                                onChange={(e) => handleInputChange('seguro_multiriscos', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.seguro_multiriscos || ''}
+                                                onChange={(e) => handleNumberInputChange('seguro_multiriscos', e.target.value)}
                                                 className={`input ${errors.seguro_multiriscos ? 'input-error' : ''}`}
                                                 placeholder="Ex: 3.50"
-                                                min="0"
-                                                step="0.01"
                                             />
                                             {errors.seguro_multiriscos && (
                                                 <p className="form-error">
@@ -381,13 +359,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Manutenção de Conta (€/mês)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.manutencao_conta}
-                                                onChange={(e) => handleInputChange('manutencao_conta', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.manutencao_conta || ''}
+                                                onChange={(e) => handleNumberInputChange('manutencao_conta', e.target.value)}
                                                 className={`input ${errors.manutencao_conta ? 'input-error' : ''}`}
                                                 placeholder="Ex: 10.00"
-                                                min="0"
-                                                step="0.01"
                                             />
                                             {errors.manutencao_conta && (
                                                 <p className="form-error">
@@ -402,13 +378,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                                 Outros Custos (€/mês)
                                             </label>
                                             <input
-                                                type="number"
-                                                value={formData.outros}
-                                                onChange={(e) => handleInputChange('outros', parseFloat(e.target.value) || 0)}
+                                                type="text"
+                                                value={formData.outros || ''}
+                                                onChange={(e) => handleNumberInputChange('outros', e.target.value)}
                                                 className={`input ${errors.outros ? 'input-error' : ''}`}
                                                 placeholder="Ex: 5.00"
-                                                min="0"
-                                                step="0.01"
                                             />
                                             {errors.outros && (
                                                 <p className="form-error">
@@ -463,13 +437,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             Prémios de Entrada (€)
                                         </label>
                                         <input
-                                            type="number"
-                                            value={formData.premios_entrada}
-                                            onChange={(e) => handleInputChange('premios_entrada', parseFloat(e.target.value) || 0)}
+                                            type="text"
+                                            value={formData.premios_entrada || ''}
+                                            onChange={(e) => handleNumberInputChange('premios_entrada', e.target.value)}
                                             className={`input ${errors.premios_entrada ? 'input-error' : ''}`}
                                             placeholder="Ex: 200.00"
-                                            min="0"
-                                            step="0.01"
                                         />
                                         {errors.premios_entrada && (
                                             <p className="form-error">
@@ -484,13 +456,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             Comissões Iniciais (€)
                                         </label>
                                         <input
-                                            type="number"
-                                            value={formData.comissoes_iniciais}
-                                            onChange={(e) => handleInputChange('comissoes_iniciais', parseFloat(e.target.value) || 0)}
+                                            type="text"
+                                            value={formData.comissoes_iniciais || ''}
+                                            onChange={(e) => handleNumberInputChange('comissoes_iniciais', e.target.value)}
                                             className={`input ${errors.comissoes_iniciais ? 'input-error' : ''}`}
                                             placeholder="Ex: 300.00"
-                                            min="0"
-                                            step="0.01"
                                         />
                                         {errors.comissoes_iniciais && (
                                             <p className="form-error">
@@ -525,26 +495,6 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                 );
 
             case 4:
-                return (
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-xl border border-gray-200 p-6">
-                            <div className="flex items-center space-x-3 mb-6">
-                                <div className="p-2 bg-orange-100 rounded-lg">
-                                    <TrendingUp className="h-5 w-5 text-orange-600" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-gray-900">Amortizações Antecipadas</h3>
-                            </div>
-
-                            <AmortizacoesForm
-                                amortizacoes={formData.amortizacoes || []}
-                                onAmortizacoesChange={(amortizacoes) => handleInputChange('amortizacoes', amortizacoes)}
-                                tempoEmprestimo={formData.tempo_emprestimo}
-                            />
-                        </div>
-                    </div>
-                );
-
-            case 5:
                 return (
                     <div className="space-y-6">
                         {/* Hidden input to ensure form submission works */}
@@ -815,7 +765,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col">
                 {/* Header */}
                 <div className="flex-shrink-0 p-6 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -843,66 +793,67 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
 
                     {/* Progress Steps */}
                     <div className="mt-6">
-                        <div className="flex items-center justify-between">
-                            {steps.map((step, index) => (
-                                <div key={step.id} className="flex items-center">
-                                    <button
-                                        onClick={() => setActiveStep(step.id)}
-                                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${activeStep === step.id
-                                            ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                                            : activeStep > step.id
-                                                ? 'bg-green-100 text-green-700 border border-green-200'
-                                                : 'bg-gray-100 text-gray-500 border border-gray-200'
-                                            }`}
-                                    >
-                                        <div className={`p-1 rounded ${activeStep === step.id
-                                            ? 'bg-blue-600 text-white'
-                                            : activeStep > step.id
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-gray-400 text-white'
-                                            }`}>
+                        <div className="flex items-center justify-center">
+                            <div className="flex items-center space-x-2">
+                                {steps.map((step, index) => (
+                                    <div key={step.id} className="flex items-center">
+                                        <button
+                                            onClick={() => setActiveStep(step.id)}
+                                            className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${activeStep === step.id
+                                                ? 'bg-blue-600 text-white shadow-lg'
+                                                : activeStep > step.id
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                                }`}
+                                        >
                                             {activeStep > step.id ? (
-                                                <CheckCircle className="h-3 w-3" />
+                                                <CheckCircle className="h-5 w-5" />
                                             ) : (
-                                                <step.icon className="h-3 w-3" />
+                                                <step.icon className="h-5 w-5" />
                                             )}
-                                        </div>
-                                        <span className="hidden sm:block">{step.title}</span>
-                                    </button>
-                                    {index < steps.length - 1 && (
-                                        <div className={`w-8 h-0.5 mx-2 ${activeStep > step.id ? 'bg-green-300' : 'bg-gray-200'
-                                            }`} />
-                                    )}
-                                </div>
-                            ))}
+                                        </button>
+                                        {index < steps.length - 1 && (
+                                            <div className={`w-12 h-0.5 mx-2 rounded-full ${activeStep > step.id ? 'bg-green-400' : 'bg-gray-300'
+                                                }`} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="mt-3 text-center">
+                            <span className="text-sm font-medium text-gray-700">
+                                {steps[activeStep - 1].title}
+                            </span>
                         </div>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 pb-4">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {renderStepContent()}
                     </form>
                 </div>
 
                 {/* Footer */}
-                <div className="flex-shrink-0 p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
                     <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
                             <span>Passo {activeStep} de {steps.length}</span>
                         </div>
 
                         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-                            <button
-                                type="button"
-                                onClick={onCancel}
-                                className="btn-secondary w-full sm:w-auto flex items-center justify-center space-x-2"
-                                disabled={isSubmitting}
-                            >
-                                <X className="h-4 w-4" />
-                                <span>Cancelar</span>
-                            </button>
+                            {!isEditing && (
+                                <button
+                                    type="button"
+                                    onClick={onCancel}
+                                    className="btn-secondary w-full sm:w-auto flex items-center justify-center space-x-2"
+                                    disabled={isSubmitting}
+                                >
+                                    <X className="h-4 w-4" />
+                                    <span>Cancelar</span>
+                                </button>
+                            )}
 
                             {activeStep > 1 && (
                                 <button

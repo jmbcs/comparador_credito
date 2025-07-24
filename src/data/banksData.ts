@@ -25,7 +25,7 @@ export const initialBanksData: BanksData = {
     "valor_emprestimo": 200000.0,
     "tempo_emprestimo": 40,
     "premios_entrada": 3333.0,
-    "comissoes_iniciais": 2182.8,
+    "comissoes_iniciais": 1701.4,
     "seguro_vida": 22.98,
     "seguro_multiriscos": 22.59,
     "manutencao_conta": 5.2,

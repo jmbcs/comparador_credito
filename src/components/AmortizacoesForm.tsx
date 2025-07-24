@@ -57,47 +57,47 @@ const AmortizacoesForm: React.FC<AmortizacoesFormProps> = ({
                     <h4 className="text-lg font-bold text-orange-900">Adicionar Amortização</h4>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">
                             Prestação
                         </label>
                         <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
-                                type="number"
-                                min="1"
-                                max={tempoEmprestimo * 12}
-                                value={novaPrestacao}
-                                onChange={(e) => setNovaPrestacao(Number(e.target.value))}
+                                type="text"
+                                value={novaPrestacao || ''}
+                                onChange={(e) => setNovaPrestacao(Number(e.target.value) || 0)}
                                 className="input pl-10 h-12"
                                 placeholder="Ex: 38"
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500">
                             {Math.ceil(novaPrestacao / 12)}º ano, {novaPrestacao % 12 || 12}º mês
                         </p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">
                             Valor (€)
                         </label>
                         <div className="relative">
                             <Euro className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={novoValor}
-                                onChange={(e) => setNovoValor(Number(e.target.value))}
+                                type="text"
+                                value={novoValor || ''}
+                                onChange={(e) => setNovoValor(Number(e.target.value) || 0)}
                                 className="input pl-10 h-12"
                                 placeholder="Ex: 10000"
                             />
                         </div>
+                        <div className="h-5"></div> {/* Spacer to align with helper text */}
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-700">
+                            &nbsp; {/* Invisible label for alignment */}
+                        </label>
                         <button
                             onClick={adicionarAmortizacao}
                             disabled={novaPrestacao <= 0 || novaPrestacao > tempoEmprestimo * 12 || novoValor <= 0}
@@ -106,6 +106,7 @@ const AmortizacoesForm: React.FC<AmortizacoesFormProps> = ({
                             <Plus className="h-4 w-4" />
                             <span>Adicionar</span>
                         </button>
+                        <div className="h-5"></div> {/* Spacer to align with helper text */}
                     </div>
                 </div>
             </div>
