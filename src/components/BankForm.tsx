@@ -35,41 +35,40 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
             newErrors.bankName = 'Nome do banco é obrigatório';
         }
 
-        if (formData.valor_emprestimo <= 0) {
-            newErrors.valor_emprestimo = 'Valor do empréstimo deve ser maior que 0';
-        }
+        // Função auxiliar para validar campos numéricos
+        const validateNumericField = (field: keyof BankData, fieldName: string, minValue: number = 0, allowZero: boolean = false) => {
+            const value = formData[field];
+            if (typeof value === 'string') {
+                if (value === '' || value === '.' || value === '0') {
+                    newErrors[field] = `${fieldName} é obrigatório`;
+                } else {
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue)) {
+                        newErrors[field] = `${fieldName} deve ser um número válido`;
+                    } else if (!allowZero && numValue <= minValue) {
+                        newErrors[field] = `${fieldName} deve ser maior que ${minValue}`;
+                    } else if (allowZero && numValue < minValue) {
+                        newErrors[field] = `${fieldName} não pode ser menor que ${minValue}`;
+                    }
+                }
+            } else if (typeof value === 'number') {
+                if (!allowZero && value <= minValue) {
+                    newErrors[field] = `${fieldName} deve ser maior que ${minValue}`;
+                } else if (allowZero && value < minValue) {
+                    newErrors[field] = `${fieldName} não pode ser menor que ${minValue}`;
+                }
+            }
+        };
 
-        if (formData.tempo_emprestimo <= 0) {
-            newErrors.tempo_emprestimo = 'Tempo do empréstimo deve ser maior que 0';
-        }
-
-        if (formData.taxa_fixa <= 0) {
-            newErrors.taxa_fixa = 'Taxa fixa deve ser maior que 0';
-        }
-
-        if (formData.seguro_vida < 0) {
-            newErrors.seguro_vida = 'Seguro de vida não pode ser negativo';
-        }
-
-        if (formData.seguro_multiriscos < 0) {
-            newErrors.seguro_multiriscos = 'Seguro multiriscos não pode ser negativo';
-        }
-
-        if (formData.manutencao_conta < 0) {
-            newErrors.manutencao_conta = 'Manutenção de conta não pode ser negativa';
-        }
-
-        if (formData.premios_entrada < 0) {
-            newErrors.premios_entrada = 'Prémios de entrada não podem ser negativos';
-        }
-
-        if (formData.comissoes_iniciais < 0) {
-            newErrors.comissoes_iniciais = 'Comissões iniciais não podem ser negativas';
-        }
-
-        if (formData.outros < 0) {
-            newErrors.outros = 'Outros custos não podem ser negativos';
-        }
+        validateNumericField('valor_emprestimo', 'Valor do empréstimo', 0, false);
+        validateNumericField('tempo_emprestimo', 'Tempo do empréstimo', 0, false);
+        validateNumericField('taxa_fixa', 'Taxa fixa', 0, false);
+        validateNumericField('seguro_vida', 'Seguro de vida', 0, true);
+        validateNumericField('seguro_multiriscos', 'Seguro multiriscos', 0, true);
+        validateNumericField('manutencao_conta', 'Manutenção de conta', 0, true);
+        validateNumericField('premios_entrada', 'Prémios de entrada', 0, true);
+        validateNumericField('comissoes_iniciais', 'Comissões iniciais', 0, true);
+        validateNumericField('outros', 'Outros custos', 0, true);
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -85,7 +84,24 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         setIsSubmitting(true);
 
         try {
-            await onSave(newBankName, formData);
+            // Converter todos os valores string para números antes de salvar
+            const processedData: BankData = {
+                ...formData,
+                valor_emprestimo: typeof formData.valor_emprestimo === 'string' ? parseFloat(formData.valor_emprestimo) || 0 : formData.valor_emprestimo,
+                tempo_emprestimo: typeof formData.tempo_emprestimo === 'string' ? parseFloat(formData.tempo_emprestimo) || 0 : formData.tempo_emprestimo,
+                taxa_fixa: typeof formData.taxa_fixa === 'string' ? parseFloat(formData.taxa_fixa) || 0 : formData.taxa_fixa,
+                periodo_fixa: typeof formData.periodo_fixa === 'string' ? parseFloat(formData.periodo_fixa) || 0 : formData.periodo_fixa,
+                euribor: typeof formData.euribor === 'string' ? parseFloat(formData.euribor) || 0 : formData.euribor,
+                spread: typeof formData.spread === 'string' ? parseFloat(formData.spread) || 0 : formData.spread,
+                seguro_vida: typeof formData.seguro_vida === 'string' ? parseFloat(formData.seguro_vida) || 0 : formData.seguro_vida,
+                seguro_multiriscos: typeof formData.seguro_multiriscos === 'string' ? parseFloat(formData.seguro_multiriscos) || 0 : formData.seguro_multiriscos,
+                manutencao_conta: typeof formData.manutencao_conta === 'string' ? parseFloat(formData.manutencao_conta) || 0 : formData.manutencao_conta,
+                premios_entrada: typeof formData.premios_entrada === 'string' ? parseFloat(formData.premios_entrada) || 0 : formData.premios_entrada,
+                comissoes_iniciais: typeof formData.comissoes_iniciais === 'string' ? parseFloat(formData.comissoes_iniciais) || 0 : formData.comissoes_iniciais,
+                outros: typeof formData.outros === 'string' ? parseFloat(formData.outros) || 0 : formData.outros,
+            };
+
+            await onSave(newBankName, processedData);
         } finally {
             setIsSubmitting(false);
         }
@@ -99,8 +115,28 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
     };
 
     const handleNumberInputChange = (field: keyof BankData, value: string) => {
-        const numValue = value === '' ? 0 : parseFloat(value) || 0;
-        handleInputChange(field, numValue);
+        // Permitir strings vazias e qualquer padrão numérico válido durante a digitação
+        if (value === '' ||
+            value === '.' ||
+            value === '0' ||
+            /^0\.$/.test(value) ||
+            /^0\.\d*$/.test(value) ||
+            /^\d+\.?\d*$/.test(value)) {
+            // Manter como string para permitir digitação contínua
+            setFormData(prev => ({ ...prev, [field]: value }));
+        } else {
+            // Verificar se é um número válido
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                handleInputChange(field, numValue);
+            } else {
+                // Se não for um número válido, manter o valor anterior
+                setFormData(prev => ({ ...prev, [field]: prev[field] }));
+            }
+        }
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
     };
 
     const formatCurrency = (value: number) => {
@@ -126,7 +162,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         if (taxaAnual === 0 || nMeses === 0) return capitalInicial;
 
         const taxaMensal = taxaAnual / 12 / 100;
-        const prestacao = calcularPrestacao(capitalInicial, taxaAnual, formData.tempo_emprestimo * 12);
+        const prestacao = calcularPrestacao(capitalInicial, taxaAnual, getNumericValue(formData.tempo_emprestimo) * 12);
 
         // Calcular capital restante após nMeses de pagamentos
         let capitalRestante = capitalInicial;
@@ -142,12 +178,43 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
     // Função para obter prestação usando mapa de dívida
     const obterPrestacaoMapaDivida = (data: BankData, mes: number): number => {
         const { gerarMapaDivida } = require('../utils/calculations');
-        const debtMap = gerarMapaDivida(data, 'temp');
+
+        // Converter dados para valores numéricos para os cálculos
+        const numericData: BankData = {
+            ...data,
+            valor_emprestimo: getNumericValue(data.valor_emprestimo),
+            tempo_emprestimo: getNumericValue(data.tempo_emprestimo),
+            taxa_fixa: getNumericValue(data.taxa_fixa),
+            periodo_fixa: getNumericValue(data.periodo_fixa),
+            euribor: getNumericValue(data.euribor),
+            spread: getNumericValue(data.spread),
+            seguro_vida: getNumericValue(data.seguro_vida),
+            seguro_multiriscos: getNumericValue(data.seguro_multiriscos),
+            manutencao_conta: getNumericValue(data.manutencao_conta),
+            premios_entrada: getNumericValue(data.premios_entrada),
+            comissoes_iniciais: getNumericValue(data.comissoes_iniciais),
+            outros: getNumericValue(data.outros),
+        };
+
+        const debtMap = gerarMapaDivida(numericData, 'temp');
         const entry = debtMap.find((entry: any) => entry.Mês === mes);
         return entry ? entry["Prestação (€)"] : 0;
     };
 
-    const totalMonthlyCosts = formData.seguro_vida + formData.seguro_multiriscos + formData.manutencao_conta + formData.outros;
+    // Função auxiliar para obter valores numéricos de forma segura
+    const getNumericValue = (value: any): number => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+            const parsed = parseFloat(value);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+    };
+
+    const totalMonthlyCosts = getNumericValue(formData.seguro_vida) +
+        getNumericValue(formData.seguro_multiriscos) +
+        getNumericValue(formData.manutencao_conta) +
+        getNumericValue(formData.outros);
 
     const steps = [
         { id: 1, title: 'Informações Básicas', icon: Building2, color: 'blue' },
@@ -198,7 +265,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.valor_emprestimo || ''}
+                                        value={typeof formData.valor_emprestimo === 'string' ? formData.valor_emprestimo : (formData.valor_emprestimo || '')}
                                         onChange={(e) => handleNumberInputChange('valor_emprestimo', e.target.value)}
                                         className={`input ${errors.valor_emprestimo ? 'input-error' : ''}`}
                                         placeholder="Ex: 200000"
@@ -217,7 +284,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.tempo_emprestimo || ''}
+                                        value={typeof formData.tempo_emprestimo === 'string' ? formData.tempo_emprestimo : (formData.tempo_emprestimo || '')}
                                         onChange={(e) => handleNumberInputChange('tempo_emprestimo', e.target.value)}
                                         className={`input ${errors.tempo_emprestimo ? 'input-error' : ''}`}
                                         placeholder="Ex: 30"
@@ -257,7 +324,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.taxa_fixa || ''}
+                                                value={typeof formData.taxa_fixa === 'string' ? formData.taxa_fixa : (formData.taxa_fixa || '')}
                                                 onChange={(e) => handleNumberInputChange('taxa_fixa', e.target.value)}
                                                 className={`input ${errors.taxa_fixa ? 'input-error' : ''}`}
                                                 placeholder="Ex: 3.5"
@@ -276,7 +343,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.periodo_fixa || ''}
+                                                value={typeof formData.periodo_fixa === 'string' ? formData.periodo_fixa : (formData.periodo_fixa || '')}
                                                 onChange={(e) => handleNumberInputChange('periodo_fixa', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 2"
@@ -289,7 +356,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.euribor || ''}
+                                                value={typeof formData.euribor === 'string' ? formData.euribor : (formData.euribor || '')}
                                                 onChange={(e) => handleNumberInputChange('euribor', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 2.081"
@@ -302,9 +369,9 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.spread || ''}
+                                                value={typeof formData.spread === 'string' ? formData.spread : (formData.spread || '')}
                                                 onChange={(e) => handleNumberInputChange('spread', e.target.value)}
-                                                className="input"
+                                                className={`input ${errors.spread ? 'input-error' : ''}`}
                                                 placeholder="Ex: 0.5"
                                             />
                                         </div>
@@ -322,7 +389,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.seguro_vida || ''}
+                                                value={typeof formData.seguro_vida === 'string' ? formData.seguro_vida : (formData.seguro_vida || '')}
                                                 onChange={(e) => handleNumberInputChange('seguro_vida', e.target.value)}
                                                 className={`input ${errors.seguro_vida ? 'input-error' : ''}`}
                                                 placeholder="Ex: 5.00"
@@ -341,7 +408,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.seguro_multiriscos || ''}
+                                                value={typeof formData.seguro_multiriscos === 'string' ? formData.seguro_multiriscos : (formData.seguro_multiriscos || '')}
                                                 onChange={(e) => handleNumberInputChange('seguro_multiriscos', e.target.value)}
                                                 className={`input ${errors.seguro_multiriscos ? 'input-error' : ''}`}
                                                 placeholder="Ex: 3.50"
@@ -360,7 +427,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.manutencao_conta || ''}
+                                                value={typeof formData.manutencao_conta === 'string' ? formData.manutencao_conta : (formData.manutencao_conta || '')}
                                                 onChange={(e) => handleNumberInputChange('manutencao_conta', e.target.value)}
                                                 className={`input ${errors.manutencao_conta ? 'input-error' : ''}`}
                                                 placeholder="Ex: 10.00"
@@ -379,7 +446,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={formData.outros || ''}
+                                                value={typeof formData.outros === 'string' ? formData.outros : (formData.outros || '')}
                                                 onChange={(e) => handleNumberInputChange('outros', e.target.value)}
                                                 className={`input ${errors.outros ? 'input-error' : ''}`}
                                                 placeholder="Ex: 5.00"
@@ -438,7 +505,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                         </label>
                                         <input
                                             type="text"
-                                            value={formData.premios_entrada || ''}
+                                            value={typeof formData.premios_entrada === 'string' ? formData.premios_entrada : (formData.premios_entrada || '')}
                                             onChange={(e) => handleNumberInputChange('premios_entrada', e.target.value)}
                                             className={`input ${errors.premios_entrada ? 'input-error' : ''}`}
                                             placeholder="Ex: 200.00"
@@ -457,7 +524,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                         </label>
                                         <input
                                             type="text"
-                                            value={formData.comissoes_iniciais || ''}
+                                            value={typeof formData.comissoes_iniciais === 'string' ? formData.comissoes_iniciais : (formData.comissoes_iniciais || '')}
                                             onChange={(e) => handleNumberInputChange('comissoes_iniciais', e.target.value)}
                                             className={`input ${errors.comissoes_iniciais ? 'input-error' : ''}`}
                                             placeholder="Ex: 300.00"
@@ -475,17 +542,17 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg border border-green-200">
                                         <span className="text-sm font-medium text-gray-700">Prémios de Entrada:</span>
-                                        <span className="font-semibold text-green-700">+{formatCurrency(formData.premios_entrada)}</span>
+                                        <span className="font-semibold text-green-700">+{formatCurrency(getNumericValue(formData.premios_entrada))}</span>
                                     </div>
                                     <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg border border-red-200">
                                         <span className="text-sm font-medium text-gray-700">Comissões Iniciais:</span>
-                                        <span className="font-semibold text-red-700">-{formatCurrency(formData.comissoes_iniciais)}</span>
+                                        <span className="font-semibold text-red-700">-{formatCurrency(getNumericValue(formData.comissoes_iniciais))}</span>
                                     </div>
                                     <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                                         <span className="text-sm font-medium text-gray-700">Saldo Inicial:</span>
-                                        <span className={`font-semibold text-lg ${formData.premios_entrada >= formData.comissoes_iniciais ? 'text-green-700' : 'text-red-700'}`}>
-                                            {formData.premios_entrada >= formData.comissoes_iniciais ? '+' : ''}
-                                            {formatCurrency(formData.premios_entrada - formData.comissoes_iniciais)}
+                                        <span className={`font-semibold text-lg ${getNumericValue(formData.premios_entrada) >= getNumericValue(formData.comissoes_iniciais) ? 'text-green-700' : 'text-red-700'}`}>
+                                            {getNumericValue(formData.premios_entrada) >= getNumericValue(formData.comissoes_iniciais) ? '+' : ''}
+                                            {formatCurrency(getNumericValue(formData.premios_entrada) - getNumericValue(formData.comissoes_iniciais))}
                                         </span>
                                     </div>
                                 </div>
@@ -511,19 +578,19 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                             <div className="data-grid mb-6">
                                 <div className="data-item">
                                     <div className="data-label">Valor do Empréstimo</div>
-                                    <div className="data-value">{formatCurrency(formData.valor_emprestimo)}</div>
+                                    <div className="data-value">{formatCurrency(getNumericValue(formData.valor_emprestimo))}</div>
                                 </div>
 
                                 <div className="data-item">
                                     <div className="data-label">Prazo Total</div>
-                                    <div className="data-value">{formData.tempo_emprestimo} anos</div>
-                                    <div className="text-xs text-gray-500">({formData.tempo_emprestimo * 12} meses)</div>
+                                    <div className="data-value">{getNumericValue(formData.tempo_emprestimo)} anos</div>
+                                    <div className="text-xs text-gray-500">({getNumericValue(formData.tempo_emprestimo) * 12} meses)</div>
                                 </div>
 
                                 <div className="data-item">
                                     <div className="data-label">Taxa Fixa</div>
-                                    <div className="data-value">{formatPercentage(formData.taxa_fixa)}</div>
-                                    <div className="text-xs text-gray-500">Período: {formData.periodo_fixa} anos</div>
+                                    <div className="data-value">{formatPercentage(getNumericValue(formData.taxa_fixa))}</div>
+                                    <div className="text-xs text-gray-500">Período: {getNumericValue(formData.periodo_fixa)} anos</div>
                                 </div>
 
                                 <div className="data-item">
@@ -536,12 +603,12 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                             <div className="data-grid mb-6">
                                 <div className="data-item">
                                     <div className="data-label">Euribor</div>
-                                    <div className="data-value">{formatPercentage(formData.euribor)}</div>
+                                    <div className="data-value">{formatPercentage(getNumericValue(formData.euribor))}</div>
                                 </div>
 
                                 <div className="data-item">
                                     <div className="data-label">Spread</div>
-                                    <div className="data-value">{formatPercentage(formData.spread)}</div>
+                                    <div className="data-value">{formatPercentage(getNumericValue(formData.spread))}</div>
                                 </div>
 
                                 <div className="data-item">
@@ -563,11 +630,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Taxa Aplicada:</span>
-                                            <span className="font-medium text-blue-700">{formatPercentage(formData.taxa_fixa)}</span>
+                                            <span className="font-medium text-blue-700">{formatPercentage(getNumericValue(formData.taxa_fixa))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Duração:</span>
-                                            <span className="font-medium">{formData.periodo_fixa} anos</span>
+                                            <span className="font-medium">{getNumericValue(formData.periodo_fixa)} anos</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Prestação Mensal:</span>
@@ -582,9 +649,9 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-sm text-gray-600">Capital em Dívida (após {formData.periodo_fixa} anos):</span>
+                                            <span className="text-sm text-gray-600">Capital em Dívida (após {getNumericValue(formData.periodo_fixa)} anos):</span>
                                             <span className="font-medium text-blue-600">
-                                                {formatCurrency(calcularCapitalRestante(formData.valor_emprestimo, formData.taxa_fixa, formData.periodo_fixa * 12))}
+                                                {formatCurrency(calcularCapitalRestante(getNumericValue(formData.valor_emprestimo), getNumericValue(formData.taxa_fixa), getNumericValue(formData.periodo_fixa) * 12))}
                                             </span>
                                         </div>
                                     </div>
@@ -599,41 +666,41 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Taxa Aplicada:</span>
-                                            <span className="font-medium text-purple-700">{formatPercentage(formData.euribor + formData.spread)}</span>
+                                            <span className="font-medium text-purple-700">{formatPercentage(getNumericValue(formData.euribor) + getNumericValue(formData.spread))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Duração:</span>
                                             <span className="font-medium">
-                                                {formData.periodo_fixa >= formData.tempo_emprestimo ?
+                                                {getNumericValue(formData.periodo_fixa) >= getNumericValue(formData.tempo_emprestimo) ?
                                                     'N/A (apenas período fixo)' :
-                                                    `${formData.tempo_emprestimo - formData.periodo_fixa} anos`
+                                                    `${getNumericValue(formData.tempo_emprestimo) - getNumericValue(formData.periodo_fixa)} anos`
                                                 }
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Prestação Mensal:</span>
                                             <span className="font-semibold text-lg text-purple-700">
-                                                {formData.periodo_fixa >= formData.tempo_emprestimo ?
+                                                {getNumericValue(formData.periodo_fixa) >= getNumericValue(formData.tempo_emprestimo) ?
                                                     'N/A (apenas período fixo)' :
-                                                    formatCurrency(obterPrestacaoMapaDivida(formData, formData.periodo_fixa * 12 + 1))
+                                                    formatCurrency(obterPrestacaoMapaDivida(formData, getNumericValue(formData.periodo_fixa) * 12 + 1))
                                                 }
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Total com Custos:</span>
                                             <span className="font-semibold text-lg text-purple-700">
-                                                {formData.periodo_fixa >= formData.tempo_emprestimo ?
+                                                {getNumericValue(formData.periodo_fixa) >= getNumericValue(formData.tempo_emprestimo) ?
                                                     'N/A (apenas período fixo)' :
-                                                    formatCurrency(obterPrestacaoMapaDivida(formData, formData.periodo_fixa * 12 + 1) + totalMonthlyCosts)
+                                                    formatCurrency(obterPrestacaoMapaDivida(formData, getNumericValue(formData.periodo_fixa) * 12 + 1) + totalMonthlyCosts)
                                                 }
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Capital em Dívida (início período variável):</span>
                                             <span className="font-medium text-purple-600">
-                                                {formData.periodo_fixa >= formData.tempo_emprestimo ?
+                                                {getNumericValue(formData.periodo_fixa) >= getNumericValue(formData.tempo_emprestimo) ?
                                                     'N/A (apenas período fixo)' :
-                                                    formatCurrency(calcularCapitalRestante(formData.valor_emprestimo, formData.taxa_fixa, formData.periodo_fixa * 12))
+                                                    formatCurrency(calcularCapitalRestante(getNumericValue(formData.valor_emprestimo), getNumericValue(formData.taxa_fixa), getNumericValue(formData.periodo_fixa) * 12))
                                                 }
                                             </span>
                                         </div>
@@ -652,19 +719,19 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Seguro de Vida:</span>
-                                            <span className="font-medium">{formatCurrency(formData.seguro_vida)}</span>
+                                            <span className="font-medium">{formatCurrency(getNumericValue(formData.seguro_vida))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Seguro Multirriscos:</span>
-                                            <span className="font-medium">{formatCurrency(formData.seguro_multiriscos)}</span>
+                                            <span className="font-medium">{formatCurrency(getNumericValue(formData.seguro_multiriscos))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Manutenção de Conta:</span>
-                                            <span className="font-medium">{formatCurrency(formData.manutencao_conta)}</span>
+                                            <span className="font-medium">{formatCurrency(getNumericValue(formData.manutencao_conta))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Outros Custos:</span>
-                                            <span className="font-medium">{formatCurrency(formData.outros)}</span>
+                                            <span className="font-medium">{formatCurrency(getNumericValue(formData.outros))}</span>
                                         </div>
                                         <div className="border-t pt-2 flex justify-between font-semibold text-emerald-700">
                                             <span>Total Mensal:</span>
@@ -682,17 +749,17 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Prémios de Entrada:</span>
-                                            <span className="font-medium text-green-700">+{formatCurrency(formData.premios_entrada)}</span>
+                                            <span className="font-medium text-green-700">+{formatCurrency(getNumericValue(formData.premios_entrada))}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-sm text-gray-600">Comissões Iniciais:</span>
-                                            <span className="font-medium text-orange-700">-{formatCurrency(formData.comissoes_iniciais)}</span>
+                                            <span className="font-medium text-orange-700">-{formatCurrency(getNumericValue(formData.comissoes_iniciais))}</span>
                                         </div>
                                         <div className="border-t pt-2 flex justify-between font-semibold">
                                             <span>Saldo Inicial:</span>
-                                            <span className={`${formData.premios_entrada >= formData.comissoes_iniciais ? 'text-green-700' : 'text-red-700'}`}>
-                                                {formData.premios_entrada >= formData.comissoes_iniciais ? '+' : ''}
-                                                {formatCurrency(formData.premios_entrada - formData.comissoes_iniciais)}
+                                            <span className={`${getNumericValue(formData.premios_entrada) >= getNumericValue(formData.comissoes_iniciais) ? 'text-green-700' : 'text-red-700'}`}>
+                                                {getNumericValue(formData.premios_entrada) >= getNumericValue(formData.comissoes_iniciais) ? '+' : ''}
+                                                {formatCurrency(getNumericValue(formData.premios_entrada) - getNumericValue(formData.comissoes_iniciais))}
                                             </span>
                                         </div>
                                     </div>
@@ -738,7 +805,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                 <div className="data-grid text-sm">
                                     <div className="data-item">
                                         <div className="data-label">Valor Total</div>
-                                        <div className="data-value">{formatCurrency(formData.valor_emprestimo)}</div>
+                                        <div className="data-value">{formatCurrency(getNumericValue(formData.valor_emprestimo))}</div>
                                     </div>
                                     <div className="data-item">
                                         <div className="data-label">Custos Anuais</div>
@@ -746,11 +813,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     </div>
                                     <div className="data-item">
                                         <div className="data-label">Custos Iniciais</div>
-                                        <div className="data-value">{formatCurrency(formData.comissoes_iniciais)}</div>
+                                        <div className="data-value">{formatCurrency(getNumericValue(formData.comissoes_iniciais))}</div>
                                     </div>
                                     <div className="data-item">
                                         <div className="data-label">Prémios de Entrada</div>
-                                        <div className="data-value">{formatCurrency(formData.premios_entrada)}</div>
+                                        <div className="data-value">{formatCurrency(getNumericValue(formData.premios_entrada))}</div>
                                     </div>
                                 </div>
                             </div>

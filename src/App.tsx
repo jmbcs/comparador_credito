@@ -1,4 +1,4 @@
-import { BarChart3, Building2, Calculator, ChevronDown, ChevronRight, ChevronUp, Download, Home, Map, Menu, Plus, TrendingUp, Upload, X } from 'lucide-react';
+import { BarChart3, Building2, Calculator, ChevronDown, ChevronRight, ChevronUp, Coffee, Download, Home, Map, Menu, Plus, TrendingUp, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import AmortizacoesForm from './components/AmortizacoesForm';
 import { BankDataDisplay } from './components/BankDataDisplay';
@@ -21,6 +21,7 @@ function App() {
     const [selectedBanksForChart, setSelectedBanksForChart] = useState<string[]>([]);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [expandedBanks, setExpandedBanks] = useState<Set<string>>(new Set());
+    const [selectedBanksForAmortizacoes, setSelectedBanksForAmortizacoes] = useState<string[]>([]);
 
     const analysisYears = useMemo(() => [1, 2, 3, 5, 10, 20, 40], []);
 
@@ -39,6 +40,19 @@ function App() {
 
         // Set selected banks for chart (all banks by default)
         setSelectedBanksForChart(Object.keys(banksData));
+
+        // Set selected banks for amortizations (all banks by default, but only if none are currently selected)
+        if (selectedBanksForAmortizacoes.length === 0) {
+            setSelectedBanksForAmortizacoes(Object.keys(banksData));
+        } else {
+            // Filter out banks that no longer exist in the data
+            const validSelectedBanks = selectedBanksForAmortizacoes.filter(bankName =>
+                Object.keys(banksData).includes(bankName)
+            );
+            if (validSelectedBanks.length !== selectedBanksForAmortizacoes.length) {
+                setSelectedBanksForAmortizacoes(validSelectedBanks);
+            }
+        }
     }, [banksData, analysisYears]);
 
     const handleSaveBank = (bankName: string, data: BankData) => {
@@ -164,7 +178,7 @@ function App() {
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">C</span>
                             </div>
-                            <div className="hidden sm:block">
+                            <div className="block">
                                 <h1 className="text-lg font-semibold text-gray-900">Comparador</h1>
                                 <p className="text-xs text-gray-500">Crédito Habitação</p>
                             </div>
@@ -189,6 +203,17 @@ function App() {
                                     </button>
                                 );
                             })}
+
+                            {/* Buy Me a Coffee Button - Desktop */}
+                            <a
+                                href="https://coff.ee/jmbcs"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200 ml-2"
+                            >
+                                <Coffee className="h-4 w-4" />
+                                <span>Buy me a coffee</span>
+                            </a>
                         </nav>
 
                         {/* Mobile Menu Button */}
@@ -229,6 +254,18 @@ function App() {
                                     </button>
                                 );
                             })}
+
+                            {/* Buy Me a Coffee Button - Mobile */}
+                            <a
+                                href="https://coff.ee/jmbcs"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center space-x-2 p-3 rounded-lg text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <Coffee className="h-4 w-4" />
+                                <span>Buy me a coffee</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -447,55 +484,34 @@ function App() {
                                             </div>
                                             <div className="p-6">
                                                 <AmortizacoesForm
-                                                    amortizacoes={banksData[Object.keys(banksData)[0]]?.amortizacoes || []}
+                                                    amortizacoes={[]}
                                                     onAmortizacoesChange={(amortizacoes) => {
+                                                        console.log('=== DEBUG AMORTIZAÇÕES ===');
+                                                        console.log('Bancos selecionados:', selectedBanksForAmortizacoes);
+                                                        console.log('Nova amortização a adicionar:', amortizacoes);
+
                                                         const updatedBanksData = { ...banksData };
-                                                        Object.keys(updatedBanksData).forEach(bankName => {
+                                                        // Aplicar amortizações apenas aos bancos selecionados
+                                                        selectedBanksForAmortizacoes.forEach(bankName => {
+                                                            // Manter as amortizações existentes do banco e adicionar as novas
+                                                            const amortizacoesExistentes = updatedBanksData[bankName].amortizacoes || [];
+                                                            console.log(`Banco ${bankName} - Amortizações existentes:`, amortizacoesExistentes);
+
                                                             updatedBanksData[bankName] = {
                                                                 ...updatedBanksData[bankName],
-                                                                amortizacoes: [...amortizacoes]
+                                                                amortizacoes: [...amortizacoesExistentes, ...amortizacoes]
                                                             };
+
+                                                            console.log(`Banco ${bankName} - Amortizações finais:`, updatedBanksData[bankName].amortizacoes);
                                                         });
                                                         setBanksData(updatedBanksData);
                                                     }}
                                                     tempoEmprestimo={banksData[Object.keys(banksData)[0]]?.tempo_emprestimo || 40}
+                                                    banksData={banksData}
+                                                    selectedBanks={selectedBanksForAmortizacoes}
+                                                    onSelectedBanksChange={setSelectedBanksForAmortizacoes}
+                                                    onBanksDataChange={setBanksData}
                                                 />
-                                            </div>
-                                        </div>
-
-                                        {/* Resumo por Banco */}
-                                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                            <div className="p-6 border-b border-gray-200">
-                                                <h3 className="font-semibold text-gray-900">Resumo por Banco</h3>
-                                                <p className="text-sm text-gray-500">Total de amortizações aplicadas a cada banco</p>
-                                            </div>
-                                            <div className="p-6">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    {Object.keys(banksData).map((bankName) => {
-                                                        const bankData = banksData[bankName];
-                                                        const totalAmortizacoes = bankData.amortizacoes?.reduce((total, a) => total + a.valor, 0) || 0;
-
-                                                        return (
-                                                            <div key={bankName} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                                                <div className="flex items-center space-x-3 mb-2">
-                                                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                                        <Building2 className="h-4 w-4 text-blue-600" />
-                                                                    </div>
-                                                                    <h4 className="font-medium text-gray-900">{bankName}</h4>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <p className="text-sm text-gray-600">Total Amortizações</p>
-                                                                    <p className="font-bold text-lg text-orange-700">
-                                                                        {new Intl.NumberFormat('pt-PT', {
-                                                                            style: 'currency',
-                                                                            currency: 'EUR'
-                                                                        }).format(totalAmortizacoes)}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -531,12 +547,28 @@ function App() {
                                     <p className="text-sm text-gray-600 mt-1">Visualize dados em gráficos interativos</p>
                                 </div>
 
-                                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 shadow-sm">
                                     <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-3">Selecionar Bancos:</label>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-sm font-medium text-gray-700">
+                                                Bancos selecionados ({selectedBanksForChart.length}/{Object.keys(banksData).length}):
+                                            </p>
+                                            {selectedBanksForChart.length > 0 && (
+                                                <button
+                                                    onClick={() => setSelectedBanksForChart([])}
+                                                    className="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                >
+                                                    Limpar todos
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
                                             {Object.keys(banksData).map(bankName => (
-                                                <label key={bankName} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                                <label key={bankName} className={`flex items-center space-x-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 border ${selectedBanksForChart.includes(bankName)
+                                                    ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                                                    }`}>
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedBanksForChart.includes(bankName)}
@@ -547,9 +579,10 @@ function App() {
                                                                 setSelectedBanksForChart(prev => prev.filter(b => b !== bankName));
                                                             }
                                                         }}
-                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-3 w-3"
                                                     />
-                                                    <span className="text-sm font-medium">{bankName}</span>
+                                                    <Building2 className="h-3 w-3" />
+                                                    <span className="text-xs font-medium">{bankName}</span>
                                                 </label>
                                             ))}
                                         </div>
