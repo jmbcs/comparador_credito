@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/comparador_credito/static/css/main.b16d0318.css",
-    "main.js": "/comparador_credito/static/js/main.078f30ac.js",
+    "main.js": "/comparador_credito/static/js/main.d98a3f3f.js",
     "index.html": "/comparador_credito/index.html",
     "main.b16d0318.css.map": "/comparador_credito/static/css/main.b16d0318.css.map",
-    "main.078f30ac.js.map": "/comparador_credito/static/js/main.078f30ac.js.map"
+    "main.d98a3f3f.js.map": "/comparador_credito/static/js/main.d98a3f3f.js.map"
   },
   "entrypoints": [
     "static/css/main.b16d0318.css",
-    "static/js/main.078f30ac.js"
+    "static/js/main.d98a3f3f.js"
   ]
 }
