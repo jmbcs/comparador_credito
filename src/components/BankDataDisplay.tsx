@@ -23,28 +23,28 @@ export const BankDataDisplay: React.FC<BankDataDisplayProps> = ({ bankName, data
 
     // Calculate spread refund (same logic as in ProposalComparisonTable)
     const calculateSpreadRefund = (data: BankData) => {
-        if (!data.devolucao_spread) return 0;
+        if (!data.devolucao_spread || !data.anos_devolucao_spread) return 0;
 
-        // Calculate average debt capital during fixed rate period
+        // Calculate average debt capital during spread refund period
         const { gerarMapaDivida } = require('../utils/calculations');
         const debtMap = gerarMapaDivida(data, 'temp');
 
-        // Get debt capital for each month during fixed rate period
-        const fixedPeriodMonths = data.periodo_fixa * 12;
-        const fixedPeriodData = debtMap.slice(0, fixedPeriodMonths);
+        // Get debt capital for each month during spread refund period
+        const spreadRefundMonths = data.anos_devolucao_spread * 12;
+        const spreadRefundData = debtMap.slice(0, spreadRefundMonths);
 
-        if (fixedPeriodData.length === 0) return 0;
+        if (spreadRefundData.length === 0) return 0;
 
-        // Calculate average debt capital during fixed period
-        const totalDebtCapital = fixedPeriodData.reduce((sum: number, entry: any) => {
+        // Calculate average debt capital during spread refund period
+        const totalDebtCapital = spreadRefundData.reduce((sum: number, entry: any) => {
             return sum + entry["Capital em Dívida (€)"];
         }, 0);
 
-        const averageDebtCapital = totalDebtCapital / fixedPeriodData.length;
+        const averageDebtCapital = totalDebtCapital / spreadRefundData.length;
 
         // Calculate total spread refund based on average debt capital
         const monthlySpreadRefund = (averageDebtCapital * (data.spread / 100)) / 12;
-        const totalRefund = monthlySpreadRefund * data.periodo_fixa * 12;
+        const totalRefund = monthlySpreadRefund * data.anos_devolucao_spread * 12;
 
         return totalRefund;
     };
@@ -152,7 +152,7 @@ export const BankDataDisplay: React.FC<BankDataDisplayProps> = ({ bankName, data
                     </div>
                     <div className="data-value">
                         {data.devolucao_spread ? (
-                            <span className="text-green-600">Sim</span>
+                            <span className="text-green-600">Sim ({data.anos_devolucao_spread} anos)</span>
                         ) : (
                             <span className="text-red-600">Não</span>
                         )}

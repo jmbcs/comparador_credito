@@ -15,6 +15,7 @@ export const initialBanksData: BanksData = {
     "manutencao_conta": 5.2,
     "outros": 0.0,
     "devolucao_spread": false,
+    "anos_devolucao_spread": 0,
     "amortizacoes": []
   },
   "Millenium": {
@@ -31,6 +32,7 @@ export const initialBanksData: BanksData = {
     "manutencao_conta": 5.2,
     "outros": 0.0,
     "devolucao_spread": false,
+    "anos_devolucao_spread": 0,
     "amortizacoes": []
   },
   "Montepio": {
@@ -41,12 +43,13 @@ export const initialBanksData: BanksData = {
     "valor_emprestimo": 200000.0,
     "tempo_emprestimo": 40,
     "premios_entrada": 2600.0,
-    "comissoes_iniciais": 2251.17,
+    "comissoes_iniciais": 2294.17,
     "seguro_vida": 16.61,
-    "seguro_multiriscos": 17.79,
+    "seguro_multiriscos": 11.79,
     "manutencao_conta": 4.6,
     "outros": 0.0,
     "devolucao_spread": true,
+    "anos_devolucao_spread": 2,
     "amortizacoes": []
   },
 };

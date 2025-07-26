@@ -62,13 +62,27 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
 
         validateNumericField('valor_emprestimo', 'Valor do empréstimo', 0, false);
         validateNumericField('tempo_emprestimo', 'Tempo do empréstimo', 0, false);
-        validateNumericField('taxa_fixa', 'Taxa fixa', 0, false);
+        // Removida validação obrigatória para taxa_fixa e periodo_fixa
         validateNumericField('seguro_vida', 'Seguro de vida', 0, true);
         validateNumericField('seguro_multiriscos', 'Seguro multiriscos', 0, true);
         validateNumericField('manutencao_conta', 'Manutenção de conta', 0, true);
         validateNumericField('premios_entrada', 'Prémios de entrada', 0, true);
         validateNumericField('comissoes_iniciais', 'Comissões iniciais', 0, true);
         validateNumericField('outros', 'Outros custos', 0, true);
+
+        // Validação específica para anos de devolução do spread
+        if (formData.devolucao_spread) {
+            const anosDevolucao = typeof formData.anos_devolucao_spread === 'string' ?
+                parseFloat(formData.anos_devolucao_spread) : formData.anos_devolucao_spread;
+            const tempoEmprestimo = typeof formData.tempo_emprestimo === 'string' ?
+                parseFloat(formData.tempo_emprestimo) : formData.tempo_emprestimo;
+
+            if (isNaN(anosDevolucao) || anosDevolucao <= 0) {
+                newErrors.anos_devolucao_spread = 'Anos de devolução do spread deve ser maior que 0';
+            } else if (anosDevolucao > tempoEmprestimo) {
+                newErrors.anos_devolucao_spread = 'Anos de devolução do spread não pode ser maior que o tempo do empréstimo';
+            }
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -78,6 +92,14 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         e.preventDefault();
 
         if (!validateForm()) {
+            // Se há erros, ir para o primeiro passo que contém erros
+            const errorFields = Object.keys(errors);
+            if (errorFields.length > 0) {
+                // Encontrar o primeiro passo com erro
+                const firstErrorField = errorFields[0];
+                const stepWithError = getFieldStep(firstErrorField);
+                setActiveStep(stepWithError);
+            }
             return;
         }
 
@@ -99,6 +121,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                 premios_entrada: typeof formData.premios_entrada === 'string' ? parseFloat(formData.premios_entrada) || 0 : formData.premios_entrada,
                 comissoes_iniciais: typeof formData.comissoes_iniciais === 'string' ? parseFloat(formData.comissoes_iniciais) || 0 : formData.comissoes_iniciais,
                 outros: typeof formData.outros === 'string' ? parseFloat(formData.outros) || 0 : formData.outros,
+                anos_devolucao_spread: typeof formData.anos_devolucao_spread === 'string' ? parseFloat(formData.anos_devolucao_spread) || 0 : formData.anos_devolucao_spread,
             };
 
             await onSave(newBankName, processedData);
@@ -211,6 +234,48 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
         return 0;
     };
 
+    // Função para obter o nome do campo em português
+    const getFieldName = (field: string): string => {
+        const fieldNames: Record<string, string> = {
+            bankName: 'Nome do Banco',
+            valor_emprestimo: 'Valor do Empréstimo',
+            tempo_emprestimo: 'Tempo do Empréstimo',
+            taxa_fixa: 'Taxa Fixa',
+            periodo_fixa: 'Período Fixo',
+            euribor: 'Euribor',
+            spread: 'Spread',
+            seguro_vida: 'Seguro de Vida',
+            seguro_multiriscos: 'Seguro Multiriscos',
+            manutencao_conta: 'Manutenção de Conta',
+            outros: 'Outros Custos',
+            premios_entrada: 'Prémios de Entrada',
+            comissoes_iniciais: 'Comissões Iniciais',
+            anos_devolucao_spread: 'Anos de Devolução do Spread'
+        };
+        return fieldNames[field] || field;
+    };
+
+    // Função para obter o passo onde o campo está localizado
+    const getFieldStep = (field: string): number => {
+        const fieldToStep: Record<string, number> = {
+            bankName: 1,
+            valor_emprestimo: 1,
+            tempo_emprestimo: 1,
+            taxa_fixa: 2,
+            periodo_fixa: 2,
+            euribor: 2,
+            spread: 2,
+            seguro_vida: 2,
+            seguro_multiriscos: 2,
+            manutencao_conta: 2,
+            outros: 2,
+            anos_devolucao_spread: 2,
+            premios_entrada: 3,
+            comissoes_iniciais: 3,
+        };
+        return fieldToStep[field] || 1;
+    };
+
     const totalMonthlyCosts = getNumericValue(formData.seguro_vida) +
         getNumericValue(formData.seguro_multiriscos) +
         getNumericValue(formData.manutencao_conta) +
@@ -320,11 +385,11 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="form-group">
                                             <label className="form-label">
-                                                Taxa Fixa (%) *
+                                                Taxa Fixa (%)
                                             </label>
                                             <input
                                                 type="text"
-                                                value={typeof formData.taxa_fixa === 'string' ? formData.taxa_fixa : (formData.taxa_fixa || '')}
+                                                value={String(formData.taxa_fixa) === '0' ? '0' : (formData.taxa_fixa ?? '')}
                                                 onChange={(e) => handleNumberInputChange('taxa_fixa', e.target.value)}
                                                 className={`input ${errors.taxa_fixa ? 'input-error' : ''}`}
                                                 placeholder="Ex: 3.5"
@@ -343,7 +408,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                             </label>
                                             <input
                                                 type="text"
-                                                value={typeof formData.periodo_fixa === 'string' ? formData.periodo_fixa : (formData.periodo_fixa || '')}
+                                                value={String(formData.periodo_fixa) === '0' ? '0' : (formData.periodo_fixa ?? '')}
                                                 onChange={(e) => handleNumberInputChange('periodo_fixa', e.target.value)}
                                                 className="input"
                                                 placeholder="Ex: 2"
@@ -460,17 +525,45 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                        <input
-                                            type="checkbox"
-                                            id="devolucao_spread"
-                                            checked={formData.devolucao_spread}
-                                            onChange={(e) => handleInputChange('devolucao_spread', e.target.checked)}
-                                            className="rounded border-gray-300 text-green-600 focus:ring-green-500 h-5 w-5"
-                                        />
-                                        <label htmlFor="devolucao_spread" className="text-sm font-medium text-gray-700">
-                                            Devolução do Spread
-                                        </label>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                            <input
+                                                type="checkbox"
+                                                id="devolucao_spread"
+                                                checked={formData.devolucao_spread}
+                                                onChange={(e) => handleInputChange('devolucao_spread', e.target.checked)}
+                                                className="rounded border-gray-300 text-green-600 focus:ring-green-500 h-5 w-5"
+                                            />
+                                            <label htmlFor="devolucao_spread" className="text-sm font-medium text-gray-700">
+                                                Devolução do Spread
+                                            </label>
+                                        </div>
+
+                                        {formData.devolucao_spread && (
+                                            <div className="form-group">
+                                                <label className="form-label">
+                                                    Anos de Duração da Devolução do Spread
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max={getNumericValue(formData.tempo_emprestimo)}
+                                                    value={typeof formData.anos_devolucao_spread === 'string' ? formData.anos_devolucao_spread : (formData.anos_devolucao_spread || '')}
+                                                    onChange={(e) => handleNumberInputChange('anos_devolucao_spread', e.target.value)}
+                                                    className={`input ${errors.anos_devolucao_spread ? 'input-error' : ''}`}
+                                                    placeholder="Ex: 2"
+                                                />
+                                                {errors.anos_devolucao_spread && (
+                                                    <p className="form-error">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <span>{errors.anos_devolucao_spread}</span>
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Define por quantos anos a devolução do spread será aplicada
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -574,6 +667,45 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                 <h3 className="text-lg font-semibold text-gray-900">Resumo da Proposta</h3>
                             </div>
 
+                            {/* Seção de Erros do Formulário - MOVIDA PARA O TOPO */}
+                            {Object.keys(errors).length > 0 && (
+                                <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-6">
+                                    <h4 className="font-semibold text-red-900 mb-3 flex items-center space-x-2">
+                                        <AlertCircle className="h-4 w-4 text-red-600" />
+                                        <span>Erros no Formulário</span>
+                                    </h4>
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-red-700 mb-3">
+                                            Por favor, corrija os seguintes erros antes de guardar o banco:
+                                        </p>
+                                        <div className="space-y-2">
+                                            {Object.entries(errors).map(([field, error]) => (
+                                                <div key={field} className="flex items-start space-x-2 p-2 bg-red-100 rounded-lg">
+                                                    <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2">
+                                                            <span className="font-medium text-red-800">
+                                                                {getFieldName(field)}:
+                                                            </span>
+                                                            <span className="text-sm text-red-700">
+                                                                {error}
+                                                            </span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setActiveStep(getFieldStep(field))}
+                                                            className="text-xs text-red-600 hover:text-red-800 underline mt-1"
+                                                        >
+                                                            Ir para o Passo {getFieldStep(field)} para corrigir
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Informações Principais */}
                             <div className="data-grid mb-6">
                                 <div className="data-item">
@@ -614,7 +746,7 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                 <div className="data-item">
                                     <div className="data-label">Devolução Spread</div>
                                     <div className="data-value">
-                                        {formData.devolucao_spread ? 'Sim' : 'Não'}
+                                        {formData.devolucao_spread ? `Sim (${getNumericValue(formData.anos_devolucao_spread)} anos)` : 'Não'}
                                     </div>
                                 </div>
                             </div>
@@ -821,6 +953,8 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     </div>
                                 </div>
                             </div>
+
+
                         </div>
                     </div>
                 );
@@ -847,6 +981,14 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                 <p className="text-sm text-gray-600 mt-1">
                                     {newBankName || 'Nome do banco'}
                                 </p>
+                                {Object.keys(errors).length > 0 && (
+                                    <div className="flex items-center space-x-1 mt-1">
+                                        <AlertCircle className="h-4 w-4 text-red-500" />
+                                        <span className="text-xs text-red-600 font-medium">
+                                            {Object.keys(errors).length} erro(s) no formulário
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <button
@@ -862,29 +1004,41 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                     <div className="mt-6">
                         <div className="flex items-center justify-center">
                             <div className="flex items-center space-x-2">
-                                {steps.map((step, index) => (
-                                    <div key={step.id} className="flex items-center">
-                                        <button
-                                            onClick={() => setActiveStep(step.id)}
-                                            className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 ${activeStep === step.id
-                                                ? 'bg-blue-600 text-white shadow-lg'
-                                                : activeStep > step.id
-                                                    ? 'bg-green-500 text-white'
-                                                    : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                                                }`}
-                                        >
-                                            {activeStep > step.id ? (
-                                                <CheckCircle className="h-5 w-5" />
-                                            ) : (
-                                                <step.icon className="h-5 w-5" />
+                                {steps.map((step, index) => {
+                                    // Verificar se este passo tem erros
+                                    const stepHasErrors = Object.keys(errors).some(field => getFieldStep(field) === step.id);
+
+                                    return (
+                                        <div key={step.id} className="flex items-center">
+                                            <button
+                                                onClick={() => setActiveStep(step.id)}
+                                                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 relative ${activeStep === step.id
+                                                    ? 'bg-blue-600 text-white shadow-lg'
+                                                    : activeStep > step.id
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                                    } ${stepHasErrors ? 'ring-2 ring-red-500 ring-offset-2' : ''}`}
+                                            >
+                                                {activeStep > step.id ? (
+                                                    <CheckCircle className="h-5 w-5" />
+                                                ) : (
+                                                    <step.icon className="h-5 w-5" />
+                                                )}
+                                                {stepHasErrors && (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                                                        <span className="text-xs text-white font-bold">
+                                                            {Object.keys(errors).filter(field => getFieldStep(field) === step.id).length}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </button>
+                                            {index < steps.length - 1 && (
+                                                <div className={`w-12 h-0.5 mx-2 rounded-full ${activeStep > step.id ? 'bg-green-400' : 'bg-gray-300'
+                                                    }`} />
                                             )}
-                                        </button>
-                                        {index < steps.length - 1 && (
-                                            <div className={`w-12 h-0.5 mx-2 rounded-full ${activeStep > step.id ? 'bg-green-400' : 'bg-gray-300'
-                                                }`} />
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="mt-3 text-center">
@@ -947,7 +1101,15 @@ export const BankForm: React.FC<BankFormProps> = ({ bankName, data, onSave, onCa
                                     type="button"
                                     className="btn-success w-full sm:w-auto flex items-center justify-center space-x-2"
                                     disabled={isSubmitting}
-                                    onClick={() => handleSubmit({ preventDefault: () => { } } as any)}
+                                    onClick={() => {
+                                        // Validar o formulário antes de submeter
+                                        if (!validateForm()) {
+                                            // Se há erros, o usuário será redirecionado para o passo com erro
+                                            // e os erros serão exibidos no passo 4
+                                            return;
+                                        }
+                                        handleSubmit({ preventDefault: () => { } } as any);
+                                    }}
                                 >
                                     {isSubmitting ? (
                                         <>

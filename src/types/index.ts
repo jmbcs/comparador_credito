@@ -17,6 +17,7 @@ export interface BankData {
   manutencao_conta: number;
   outros: number;
   devolucao_spread: boolean;
+  anos_devolucao_spread: number;
   amortizacoes: Amortizacao[];
 }
 

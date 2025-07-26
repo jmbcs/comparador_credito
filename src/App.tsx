@@ -4,6 +4,7 @@ import AmortizacoesForm from './components/AmortizacoesForm';
 import { BankDataDisplay } from './components/BankDataDisplay';
 import { BankForm } from './components/BankForm';
 import { DebtMapChart } from './components/DebtMapChart';
+import { HomeInstructions } from './components/HomeInstructions';
 import { ProposalComparisonTable } from './components/ProposalComparisonTable';
 import { YearlyCalculationsTable } from './components/YearlyCalculationsTable';
 import { initialBanksData } from './data/banksData';
@@ -15,7 +16,7 @@ function App() {
     const [selectedBank, setSelectedBank] = useState<string>('');
     const [showForm, setShowForm] = useState(false);
     const [editingBank, setEditingBank] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'dados' | 'propostas' | 'amortizacoes' | 'graficos' | 'debt-map'>('dados');
+    const [activeTab, setActiveTab] = useState<'home' | 'dados' | 'propostas' | 'amortizacoes' | 'graficos' | 'debt-map'>('home');
     const [comparisonResults, setComparisonResults] = useState<{ [key: string]: { [key: number]: any } }>({});
     const [debtMapData, setDebtMapData] = useState<DebtMapEntry[]>([]);
     const [selectedBanksForChart, setSelectedBanksForChart] = useState<string[]>([]);
@@ -160,7 +161,8 @@ function App() {
     };
 
     const tabs = [
-        { id: 'dados', label: 'Dados', icon: Home },
+        { id: 'home', label: 'Home', icon: Home },
+        { id: 'dados', label: 'Dados', icon: Building2 },
         { id: 'propostas', label: 'Propostas', icon: TrendingUp },
         { id: 'amortizacoes', label: 'Amortizações', icon: Calculator },
         { id: 'debt-map', label: 'Mapa', icon: Map },
@@ -174,7 +176,10 @@ function App() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         {/* Logo and Title */}
-                        <div className="flex items-center space-x-3">
+                        <button
+                            onClick={() => setActiveTab('home')}
+                            className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors duration-200"
+                        >
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">C</span>
                             </div>
@@ -182,7 +187,7 @@ function App() {
                                 <h1 className="text-lg font-semibold text-gray-900">Comparador</h1>
                                 <p className="text-xs text-gray-500">Crédito Habitação</p>
                             </div>
-                        </div>
+                        </button>
 
                         {/* Desktop Navigation */}
                         <nav className="hidden md:flex items-center space-x-1">
@@ -254,13 +259,15 @@ function App() {
                                     </button>
                                 );
                             })}
+                        </div>
 
-                            {/* Buy Me a Coffee Button - Mobile */}
+                        {/* Buy Me a Coffee Button - Mobile (Full Width) */}
+                        <div className="mt-3">
                             <a
                                 href="https://coff.ee/jmbcs"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center justify-center space-x-2 p-3 rounded-lg text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200"
+                                className="flex items-center justify-center space-x-2 p-3 rounded-lg text-sm font-medium bg-orange-500 text-white hover:bg-orange-600 transition-all duration-200 w-full"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 <Coffee className="h-4 w-4" />
@@ -274,7 +281,15 @@ function App() {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {/* Tab Content */}
-                <div className="space-y-6">
+                <div className="space-y-6 relative">
+                    {/* Home Tab */}
+                    <div className={`transition-all duration-300 ease-in-out ${activeTab === 'home' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 absolute'
+                        }`}>
+                        {activeTab === 'home' && (
+                            <HomeInstructions />
+                        )}
+                    </div>
+
                     {/* Dados Tab */}
                     <div className={`transition-all duration-300 ease-in-out ${activeTab === 'dados' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 absolute'
                         }`}>
@@ -620,6 +635,7 @@ function App() {
                                 manutencao_conta: 0,
                                 outros: 0,
                                 devolucao_spread: false,
+                                anos_devolucao_spread: 0,
                                 amortizacoes: []
                             }}
                             onSave={handleSaveBank}

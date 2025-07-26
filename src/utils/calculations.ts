@@ -41,6 +41,7 @@ export function calcularPlanoEmprestimo(dadosBanco: BankData): MonthlyResult[] {
   const comissoesIniciais = toDecimal(dadosBanco.comissoes_iniciais || 0);
   const premiosEntrada = toDecimal(dadosBanco.premios_entrada || 0);
   const devolucaoSpread = dadosBanco.devolucao_spread || false;
+  const anosDevolucaoSpread = dadosBanco.anos_devolucao_spread || 0;
   const tempoEmprestimo = dadosBanco.tempo_emprestimo;
 
   let capitalEmDivida = valorEmprestimo;
@@ -91,9 +92,9 @@ export function calcularPlanoEmprestimo(dadosBanco: BankData): MonthlyResult[] {
     const jurosMes = toDecimal(capitalEmDivida * taxaMensal);
     const amortizacaoNormalMes = toDecimal(prestacaoMensal - jurosMes);
 
-    // Accumulate theoretical spread during fixed period
+    // Accumulate theoretical spread during spread refund period
     let spreadDevolvidoMes = 0;
-    if (devolucaoSpread && mes <= periodoFixa * 12) {
+    if (devolucaoSpread && anosDevolucaoSpread > 0 && mes <= anosDevolucaoSpread * 12) {
       const spreadMensal = toDecimal(spread / 12 / 100);
       const spreadPagoMes = toDecimal(capitalEmDivida * spreadMensal);
       spreadPagoAcumulado = toDecimal(spreadPagoAcumulado + spreadPagoMes);
@@ -156,6 +157,7 @@ export function gerarMapaDivida(dadosBanco: BankData, nomeBanco: string): DebtMa
   const comissoesIniciais = toDecimal(dadosBanco.comissoes_iniciais || 0);
   const premiosEntrada = toDecimal(dadosBanco.premios_entrada || 0);
   const devolucaoSpread = dadosBanco.devolucao_spread || false;
+  const anosDevolucaoSpread = dadosBanco.anos_devolucao_spread || 0;
   const tempoEmprestimo = dadosBanco.tempo_emprestimo;
 
   let capitalEmDivida = valorEmprestimo;
@@ -208,7 +210,7 @@ export function gerarMapaDivida(dadosBanco: BankData, nomeBanco: string): DebtMa
 
     // Calculate spread refund
     let spreadDevolvidoMes = 0;
-    if (devolucaoSpread && mes <= periodoFixa * 12) {
+    if (devolucaoSpread && anosDevolucaoSpread > 0 && mes <= anosDevolucaoSpread * 12) {
       const spreadMensal = toDecimal(spread / 12 / 100);
       const spreadPagoMes = toDecimal(capitalEmDivida * spreadMensal);
       spreadPagoAcumulado = toDecimal(spreadPagoAcumulado + spreadPagoMes);
